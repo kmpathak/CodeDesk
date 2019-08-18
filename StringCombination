@@ -17,6 +17,7 @@ if(r==1){
 for(char c:data.toCharArray()){
 list.add(String.valueOf(c));
 }
+return list;
 }
 cData=data.charAt(0);
 data=data.subString(1);
