@@ -1,0 +1,29 @@
+import java.util.ArrayList;
+
+Class StringCombinations{
+//recursive logic to generate string combinations out of a given string
+/* Ex:- "Kmp" 
+Constraints:- find combintions of string with no. of letters r=2
+output:-km,kp,mp
+*/
+public static List<String> getCombinations(String data,int r){
+ArrayList<String> list=new ArrayList<String>();
+char cData;
+if(r==data.length()){
+list.add(data);
+return list;
+}
+if(r==1){
+for(char c:data.toCharArray()){
+list.add(String.valueOf(c));
+}
+return list;
+}
+cData=data.charAt(0);
+data=data.subString(1);
+list=getCombinations(data,r);
+for(String str:getCombinations(data,--r).toArray())
+list.add(cData+str);
+}
+return list;
+}
