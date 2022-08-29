@@ -1,0 +1,631 @@
+import java.nio.channels.Pipe;
+import java.util.*;
+
+public class Test {
+
+    public static void main(String[] args) {
+        //  System.out.println(sqrt(2147483647));
+        //  System.out.println(findMaxK(Arrays.asList(5, 10, 20, 100, 105 ),130));
+        // System.out.println(solve(19, 11, 13));
+        ArrayList<ArrayList<Integer>> list = new ArrayList<ArrayList<Integer>>() {{
+            add(new ArrayList<Integer>(Arrays.asList(1, 3, 5)));
+            add(new ArrayList<Integer>(Arrays.asList(2, 6, 9)));
+            add(new ArrayList<Integer>(Arrays.asList(3, 6, 9)));
+        }};
+        // System.out.println(findMedian(list));
+        //System.out.println(solve(new ArrayList<Integer>(Arrays.asList(8, 11, 15, 20, 17, 15, 7)), 17));
+        //System.out.println(paint(3,10,new ArrayList<>(Arrays.asList(185, 186, 938, 558, 655, 461, 441, 234, 902, 681))));
+        //System.out.println(books(new ArrayList<>(Arrays.asList(97, 26, 12, 67, 10, 33, 79, 49, 79, 21, 67, 72, 93, 36, 85, 45, 28,
+        //      91, 94, 57, 1, 53, 8, 44, 68, 90, 24)),26));
+        //System.out.println(solveDiff(new ArrayList<Integer>(Arrays.asList( 5, 2, 2, 4, 9, 8, 5, 3, 8, 8, 10, 4, 2,
+        //      10, 9, 7, 6, 1, 3, 9, 7, 1, 3, 5 )), 3));
+        //System.out.println(closestPairsFromSortedArrays(new ArrayList<Integer>(Arrays.asList(1, 3, 5, 7, 9)),new ArrayList<Integer>(Arrays.asList(2, 4, 6, 8, 10)), 10));
+        countItemsInContainers2("*|****|***|*****|**|*", new ArrayList<Integer>(Arrays.asList(1, 3, 5, 2)), new ArrayList<Integer>(Arrays.asList(7, 6, 7, 4))).forEach(System.out::println);
+        // System.out.println(maximumQuality(new ArrayList<Integer>(Arrays.asList(5,2,1,4,3)),2));
+    }
+
+    public static int sqrt(int A) {
+        int i = 0;
+        int j = A;
+        int mid = 0;
+        int leastsqrt = 0;
+        while (i <= j) {
+            mid = (i + j) / 2;
+            if (mid * mid == A)
+                return mid;
+            if (mid * mid > A) {
+                j = mid - 1;
+            } else {
+                i = mid + 1;
+                leastsqrt = mid;
+            }
+        }
+        return leastsqrt;
+    }
+
+    public static int findMaxK(List<Integer> A, int B) {
+        int start = 0;
+        int end = A.size() - 1;
+        int ans = 0;
+        ArrayList<Long> data = new ArrayList<Long>();
+        int a = A.get(0);
+        data.add((long) a);
+        for (int i = 1; i < A.size(); i++) {
+            data.add((long) data.get(i - 1) + A.get(i));
+        }
+        l1:
+        while (start <= end) {
+            int mid = (start + end) / 2;
+            if (mid == 0) {
+                start = mid + 1;
+                continue;
+            }
+            for (int i = mid; i < data.size(); i++) {
+                long sum = data.get(i) - data.get(i - mid);
+                if (sum > B) {
+                    end = mid - 1;
+                    continue l1;
+                }
+            }
+            if ((long) data.get(mid - 1) > B) {
+                end = mid - 1;
+            } else {
+                start = mid + 1;
+                ans = mid;
+            }
+        }
+        if (start == data.size()) {
+            if ((long) data.get(start - 1) < B)
+                ans = start;
+        }
+        return ans;
+    }
+
+    public static int solve(int A, int B, int C) {
+        // calculate LCM of the two numbers...
+        int lcm = 1;
+        while (true) {
+            if (lcm % B == 0 && lcm % C == 0) {
+                break;
+            }
+            lcm++;
+        }
+        long start = Math.min((long) B, (long) C);
+        long end = 1000000000000000l;
+        long ans = 0;
+        while (start <= end) {
+            long mid = (start + end) / 2;
+            long nthMagicNo = mid / B + mid / C - (mid / lcm);
+            if (nthMagicNo >= A) {
+                ans = mid;
+                end = mid - 1;
+            } else
+                start = mid + 1;
+        }
+        ans = ans % 1000000007;
+        return (int) ans;
+    }
+
+    public static int findMedian(ArrayList<ArrayList<Integer>> A) {
+        //TC would be O(N*logM*log(N*M))
+        int rows = A.size();
+        int columns = A.get(0).size();
+        int medianPos = 1 + (rows * columns) / 2;
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        int i = 0;
+        long ans = 0;
+        //calculating global max and min to consider as flat Array out-of Matrix pivotal at min & max values...
+        while (i < rows) {
+            if (A.get(i).get(0) < min)
+                min = A.get(i).get(0);
+            if (A.get(i).get(columns - 1) > max)
+                max = A.get(i).get(columns - 1);
+            i++;
+        }
+        while (min <= max) {
+            int mid = (int) ((long) min + max) / 2;
+            //count no. of elemnts in original matrix less than this median and get the best solution...
+            int count = countSmallestElements(A, mid);
+            if (count >= medianPos) {
+                ans = mid;
+                max = mid - 1;
+            } else
+                min = mid + 1;
+        }
+        return (int) ans;
+    }
+
+    public static int countSmallestElements(ArrayList<ArrayList<Integer>> A, int element) {
+        //iterate on each row and find smallest using binary serach with constact TC as N*logM
+        int i = 0;
+        int rows = A.size();
+        int columns = A.get(0).size();
+        int smallestCount = 0;
+        while (i < rows) {
+            int start = 0;
+            int end = columns - 1;
+            int count = 0;
+            while (start <= end) {
+                int mid = (start + end) / 2;
+                if ((int) A.get(i).get(mid) > element)
+                    end = mid - 1;
+                else {
+                    count = mid + 1;
+                    start = mid + 1;
+                }
+            }
+            smallestCount += count;
+            i++;
+        }
+        return smallestCount;
+    }
+
+    public static int solve(ArrayList<Integer> A, int B) {
+        //find peak element...
+        int iPeak = findPeakElementIndex(A);
+
+        //seach at both side using binary algo in ASC and DSC parts
+        int iLeft = binarySearch(A, iPeak, B, "ASC");
+        int iRight = binarySearch(A, iPeak, B, "DSC");
+        return iLeft != -1 ? iLeft : iRight;
+    }
+
+    public static int findPeakElementIndex(ArrayList<Integer> A) {
+        int start = 0;
+        int end = A.size() - 1;
+        int mid = -1;
+        while (start <= end) {
+            mid = (start + end) >> 1;
+            int data = A.get(mid);
+            int prev = 0;
+            int next = 0;
+            if (mid > 0)
+                prev = A.get(mid - 1);
+            else {
+                start = mid + 1;
+                continue;
+            }
+            if (mid < A.size() - 1)
+                next = A.get(mid + 1);
+            else {
+                end = mid - 1;
+                continue;
+            }
+            if ((next - data) >= 0 && (data - prev) >= 0) {
+                start = mid + 1;
+            } else if ((next - data) <= 0 && (data - prev) <= 0) {
+                end = mid - 1;
+            } else {
+                return mid;
+            }
+        }
+        return mid;
+    }
+
+    public static int binarySearch(ArrayList<Integer> A, int iPeak, int B, String sortOrder) {
+        int start = 0;
+        int end = iPeak;
+        if (sortOrder.equals("DSC")) {
+            start = iPeak;
+            end = A.size() - 1;
+        }
+        while (start <= end) {
+            int mid = (start + end) >> 1;
+            int data = A.get(mid);
+            if (data == B) {
+                return mid;
+            }
+            if (sortOrder.equals("ASC")) {
+                if (data > B) {
+                    end = mid - 1;
+                } else {
+                    start = mid + 1;
+                }
+            } else if (sortOrder.equals("DSC")) {
+                if (data > B) {
+                    start = mid + 1;
+                } else {
+                    end = mid - 1;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public static int paint(int A, int B, ArrayList<Integer> C) {
+        //this algo is target centric rather than iterating on all possible cases...
+        //find min and max efforts...
+        //min effort is defined when each task is assigned to single resource..
+        //max effort is defined where a single resource executes all the tasks..
+        //this min and max creates a space of efforts between which binary algo can be applied as follows...
+        //if given resources are capable of doing the work within the effort at mid moves left of the mid
+        //else move right in the mid
+        //if it equals at mid then return because we don't want any other solution as best..the firts one is the best one...
+
+        //calculate prefix sum to calculate cummulate board lengths and let say it afforts as it is proportional to time ...
+
+        ArrayList<Long> efforts = new ArrayList<Long>();
+        int first = C.get(0);
+        efforts.add((long) first);
+        for (int i = 1; i < C.size(); i++) {
+            efforts.add(efforts.get(i - 1) + C.get(i));
+        }
+        //calculate min-max space for efforts to iterate over
+        long max = efforts.get(efforts.size() - 1);
+        long min = Long.MIN_VALUE;  //this min will be actually a max value in the array...
+        for (int i = 0; i < C.size(); i++) {
+            int data = C.get(i);
+            if ((long) data > min)
+                min = data;
+        }
+        //Binary search the entire space between these min and max if tasks can be done with the given resources...
+        long ans = 0;
+        while (min <= max) {
+            long mid = (min + max) >> 1;
+            if (check(A, efforts, mid)) {
+                ans = mid;
+                max = mid - 1;
+            } else {
+                min = mid + 1;
+            }
+        }
+        ans = ans * B;
+        return ((int) ans) % 10000003;
+    }
+
+    // check if A painters can do tasks in given time...
+    public static boolean check(int A, ArrayList<Long> efforts, long effort) {
+        int resources = A;
+        int j = 0;
+        long data = 0;
+        for (int i = 0; i < efforts.size(); i++) {
+            if (j == 0)
+                data = efforts.get(i);
+            else
+                data = efforts.get(i) - efforts.get(j);
+            if (data > effort) {
+                resources--;
+                j = i - 1;
+            }
+        }
+        if (resources >= 0)
+            return true;
+        else
+            return false;
+    }
+
+    public static int solve2(ArrayList<Integer> A, int B) {
+        //goal is to find some maxia of minimum distances among all the arrangments of cows...
+        //we will have nCB combinations that leads to n! Iterations....
+        //we can focus on target directly and iterate on target...
+
+        //assign min and max target space
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int i = 0; i < A.size(); i++) {
+            if ((int) A.get(i) > max)
+                max = A.get(i);
+            if ((int) A.get(i) < min)
+                min = A.get(i);
+        }
+        max = max - min;
+        min = 1;
+        Collections.sort(A);
+        //Binary Serach over the target space and follow:
+        //check if for the current minimum distance cows can be arranged
+        //if so then move in right direct for larger minimum distances
+        //if not then move backward for smaller minimum distances
+        int ans = 0;
+        while (min <= max) {
+            int mid = (min + max) >> 1;
+            if (check(A, B, mid)) {
+                ans = mid;
+                min = mid + 1;
+            } else {
+                max = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    public static boolean check(ArrayList<Integer> A, int B, int minimum) {
+        int cows = B - 1;
+        int j = 0;
+        int distance = 0;
+        for (int i = 0; i < A.size(); i++) {
+            distance = A.get(i) - A.get(j);
+            if (distance >= minimum) {
+                cows--;
+                j = i;
+                if (cows > 0)
+                    continue;
+                else
+                    break;
+            }
+        }
+        if (cows == 0)
+            return true;
+        else
+            return false;
+    }
+
+    public static int books(ArrayList<Integer> A, int B) {
+        //goal to achieve this by minimizing the maximum value of any arrangement
+        //obtain min and max...
+        long min = 0;
+        long max = 0;
+        //calculate prefix sum and min , max...
+        int first = A.get(0);
+        min = first; // this is actaully max of numbers..
+        ArrayList<Long> pages = new ArrayList<Long>();
+        pages.add((long) first);
+        for (int i = 1; i < A.size(); i++) {
+            long data = A.get(i);
+            pages.add(pages.get(i - 1) + data);
+            if (min < data) {
+                min = data;
+            }
+        }
+        max = pages.get(pages.size() - 1);
+        //iterate over the target space using Binary Search
+        long ans = -1;
+        while (min <= max) {
+            long mid = (min + max) >> 1;
+            int result = check(pages, B, mid); //check if with the given max pages can be allocated to the students...
+            if (result == 0) {  //all students alloted with books
+                ans = mid;
+                max = mid - 1;
+            } else if (result > 0) {  //few students are unassnot alloted with books
+                max = mid - 1;
+            } else {
+                min = mid + 1;  //students not available for books allotment
+            }
+        }
+        return (int) ans;
+    }
+
+    public static int check(ArrayList<Long> pageList, int B, long maxPages) {
+        int students = B;
+        long pages = 0;
+        int i = 0, j = -1;
+        for (; i < pageList.size(); i++) {
+            if (j < 0)
+                pages = pageList.get(i);
+            else
+                pages = pageList.get(i) - pageList.get(j);
+            if (pages > maxPages) {
+                students--;
+                if (i >= 1)
+                    j = i - 1;
+            }
+        }
+        pages = pageList.get(i - 1) - pageList.get(j);
+        if (pages <= maxPages) {
+            students--;
+        }
+        return students;
+    }
+
+    public static int solveDiff(ArrayList<Integer> A, int B) {
+        int count = 0;
+        int max = Integer.MIN_VALUE;
+        for (int i = 0; i < A.size(); i++) {
+            if (max < (int) A.get(i))
+                max = A.get(i);
+        }
+        int[] elements = new int[max + 1];
+        for (int i = 0; i < A.size(); i++) {
+            int index = A.get(i);
+            elements[index]++;
+        }
+        int i = 0, j = B;
+        while (j < elements.length) {
+            if (--elements[i] >= 0 && --elements[j] >= 0)
+                count++;
+            i++;
+            j++;
+        }
+        return count;
+    }
+
+    public static int findPairCount(ArrayList<Integer> A, int B) {
+        int i = 0;
+        int j = A.size() - 1;
+        int count = 0;
+        int mod = 1000 * 1000 * 1000 + 7;
+        while (i < j) {
+            int sum = A.get(i) + A.get(j);
+            if (sum == B) {
+                int left = 1;
+                int right = 1;
+                if ((int) A.get(i) == (int) A.get(j)) {
+                    right = right + j - i;
+                    j = i;
+                    count = (int) (count + ((right * 1l * (right - 1)) / 2) % mod) % mod;
+                } else {
+                    while (j > i && (int) A.get(j) == (int) A.get(j - 1)) {
+                        right++;
+                        j--;
+                    }
+                    while (i < j && (int) A.get(i) == (int) A.get(i + 1)) {
+                        left++;
+                        i++;
+                    }
+                    count = (int) (count + (left * 1l * right) % mod) % mod;
+                }
+                i++;
+                j--;
+            } else if (sum > B) {
+                j--;
+            } else {
+                i++;
+            }
+        }
+        return count;
+    }
+
+    public static ArrayList<Integer> sortColors(ArrayList<Integer> A) {
+        int i = 0;
+        int j = A.size() - 1;
+        int k = 0;
+        while (k <= j) {
+            if ((int) A.get(k) == 0) {
+                swap(A, i, k);
+                i++;
+                k++;
+            } else if ((int) A.get(k) == 2) {
+                swap(A, j, k);
+                j--;
+            } else {
+                k++;
+            }
+        }
+        return A;
+    }
+
+    public static void swap(ArrayList<Integer> A, int i, int k) {
+        if (i == k) //as it is same cell of Array so exclusive or gives 0 and original value lost this way...so ignore this
+            return;
+        A.set(i, (int) A.get(i) ^ (int) A.get(k));
+        A.set(k, (int) A.get(i) ^ (int) A.get(k));
+        A.set(i, (int) A.get(i) ^ (int) A.get(k));
+    }
+
+    public static ArrayList<Integer> closestPairsFromSortedArrays(ArrayList<Integer> A, ArrayList<Integer> B, int C) {
+        int i = 0;
+        int j = B.size() - 1;
+        int min = Integer.MAX_VALUE;
+        ArrayList<Integer> pair = new ArrayList<Integer>();
+        pair.add(-1);
+        pair.add(-1);
+        while (i < A.size() && j >= 0) {
+            int sum = A.get(i) + B.get(j);
+            int diff = Math.abs(sum - C);
+            if (diff < min) {
+                min = diff;
+                pair.set(0, A.get(i));
+                pair.set(1, B.get(j));
+            }
+            if (sum < C) {
+                i++;
+            } else if (sum > C) {
+                j--;
+            } else {
+                do {
+                    sum = B.get(j) + B.get(--j);
+                    diff = Math.abs(sum - C);
+                } while (diff == min);
+                pair.set(1, B.get(j + 1));
+                break;
+            }
+        }
+        return pair;
+    }
+
+    public static int countItemsInContainers(String items, ArrayList<Integer> leftIndices, ArrayList<Integer> rightIndices) {
+        boolean skipLeft = true;
+        boolean skipRight = true;
+        int count = 0;
+        int i = 0;
+        while (i < leftIndices.size() && i < rightIndices.size()) {
+            char[] chars = items.substring(leftIndices.get(i), rightIndices.get(i)).toCharArray();
+            int j = 0;
+            int k = chars.length - 1;
+            while (j <= k) {
+                if (skipLeft == false && skipRight == false) {
+                    if (chars[j] == '*') {
+                        count++;
+                    }
+                    j++;
+                } else if (skipLeft == true) {
+                    if (chars[j] == '|') {
+                        skipLeft = false;
+                        continue;
+                    }
+                    j++;
+                } else if (skipRight == true) {
+                    if (chars[k] == '|') {
+                        skipRight = false;
+                        continue;
+                    }
+                    k--;
+                }
+            }
+            i++;
+        }
+        return count;
+    }
+
+    // Ex:- **|*****|*****|**|***
+    public static ArrayList<Integer> countItemsInContainers2(String items, ArrayList<Integer> leftIndices, ArrayList<Integer> rightIndices) {
+        ArrayList<Integer> ans = new ArrayList<>();
+        //store position of pipes in an array...
+        //for each query search for the first and last pipes which is closest to the start and end of query..
+        //compute : (endPositionOfPipe-startPositionOfPipe-1)-(index of end pipe-index of start pipe-1)
+
+        return ans;
+    }
+
+    /*
+     * Complete the 'maximumQuality' function below.
+     *
+     * The function is expected to return a LONG_INTEGER.
+     * The function accepts following parameters:
+     *  1. INTEGER_ARRAY packets
+     *  2. INTEGER channels
+     */
+
+    /**
+     * Problem Statement:- There are n server channels sending out m packets. you have to find maximum median
+     * of all the channels. Each channel sends at least one packet.
+     * Median of any channel is calculated in the fashion as:
+     * if no. of packets for particular channel is odd then find the mid packet as median.
+     * if no. of packets for particular channel is even then find the average/mean of (mid packet and mid+1 packet)
+     *
+     * @param packets
+     * @param channels
+     * @return
+     */
+    public static long maximumQuality(List<Integer> packets, int channels) {
+        // Write your code here
+        long ans = 0;
+        long min = 1;
+        long max = 0;
+        int size = packets.size();
+        Collections.sort(packets);
+        ArrayList<Long> ps = new ArrayList<>();
+        long first = packets.get(0);
+        ps.add(first);
+        for (int i = 1; i < packets.size(); i++) {
+            ps.add(ps.get(i - 1) + packets.get(i));
+        }
+        if (ps.size() / 2 != 0) {
+            max = packets.get(packets.size() / 2); //max median of the first channel will determine the total median of channels
+        } else {
+            max = (long) Math.ceil((packets.get((packets.size() / 2) - 1) + 0.0d + packets.get((packets.size() / 2))) / 2);
+        }
+        min = packets.get(0);
+        for (long i = max; i >= min; i++) { //check if this minimum of 1st packet can be considered for maximum of total median.
+            int j = 0;
+            int k = 0;
+            while (j < ps.size()) {
+                long median = 0;
+                if ((j + k) / 2 != 0) {
+                    median = packets.get((j + k) / 2);
+                } else {
+                    median = (long) Math.ceil((packets.get(((j + k) / 2) - 1) + packets.get((j + k) / 2) + 0.0d) / 2);
+                }
+                if (median > i) {
+                    channels--;
+                    k = j;
+                    if (channels <= 0)
+                        break;
+                }
+                j++;
+            }
+        }
+        return ans;
+    }
+
+}
